@@ -184,11 +184,39 @@ class Orders(QWidget):
         cur.execute("""INSERT INTO orders (date) VALUES (date('now'))""")
         self.OrderId = cur.lastrowid
         for i in self.choices:
-            if i.isChecked():
+            if i.isChecked() and int(self.numbers[self.choices.index(i)].text()) != 0:
                 cur.execute("""INSERT INTO ordered (id_order,id_meal,count) VALUES (?,?,?)""",
                             (self.OrderId,self.mealsid[self.choices.index(i)],int(self.numbers[self.choices.index(i)].text())))
         con.commit()
         con.close()
+
+    def getStatsDaily(self):
+        con = sqlite3.connect(self.get_filename())
+        cur = con.cursor()
+        result = cur.execute("""SELECT id_meal, count FROM ordered 
+                                    WHERE(id_order in (SELECT id FROM orders WHERE date=date('now')))""").fetchall()
+        con.close()
+        g = []
+        for i in self.mealsid:
+            s = 0
+            for j in result:
+                if j[0] == i:
+                    s += j[1]
+            if s != 0:
+                g.append((i, s))
+        return g
+
+    def getTotalSell(self):
+        con = sqlite3.connect(self.get_filename())
+        cur = con.cursor()
+        result = cur.execute("""SELECT id_meal, count FROM ordered 
+                                    WHERE(id_order in (SELECT id FROM orders WHERE date=date('now')))""").fetchall()
+        con.close()
+        s = 0.0
+        for i in result:
+            ind = self.mealsid.index(i[0])
+            s += self.prices[ind] * i[1]
+        return s
 
     def updateTime(self):
         now = datetime.now()
@@ -284,11 +312,24 @@ class Orders(QWidget):
 
     def start_stats(self):
         try:
-            self.Stats.setPlainText('')
+            self.Stats.setPlainText(self.PrintStats())
             self.StLayout.setCurrentIndex(3)
         except Exception as e:
             msg = QErrorMessage(self)
             msg.showMessage('Ошибка: ' + str(e))
+
+    def PrintStats(self):
+        StatsDaily = self.getStatsDaily()
+        TotalSell = self.getTotalSell()
+        now = datetime.now()
+        strStats = ''
+        strStats += 'Отчёт за ' + now.strftime("%d.%m.%Y")
+        strStats += '\n\nПродано за день:\n'
+        for i in StatsDaily:
+            mealnum = self.mealsid.index(i[0])
+            strStats += '- ' + self.choices[mealnum].text() + ': ' + str(i[1]) + ' шт.\n'
+        strStats += 'Всего продано товаров на сумму ' + str(TotalSell) + ' рублей.'
+        return strStats
 
     def less(self):
         number = self.numbers[self.counting.index(self.sender()) // 2]
