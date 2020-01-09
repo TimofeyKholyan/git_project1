@@ -127,7 +127,7 @@ class Orders(QWidget):
         self.Stats.setReadOnly(True)
 
         self.Back2 = QPushButton('Назад')
-        self.Back2.clicked.connect(self.start_main)
+        self.Back2.clicked.connect(self.back_to_main)
 
         self.StatsScreen = QVBoxLayout()
         self.StatsScreen.addWidget(self.Stats, stretch=1)
@@ -269,12 +269,15 @@ class Orders(QWidget):
             self.Frame4.setLayout(self.StatsScreen)
             self.StLayout.addWidget(self.Frame4)
             self.IsMenuLoaded = True
-        else :
+        else:
             # обнулить все значения
             for i in self.numbers:
                 i.setText('0')
             for i in self.choices:
                 i.setChecked(False)
+        self.StLayout.setCurrentIndex(1)
+
+    def back_to_main(self):
         self.StLayout.setCurrentIndex(1)
 
     def get_receipt(self):
